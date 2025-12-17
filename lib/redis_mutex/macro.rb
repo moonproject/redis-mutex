@@ -35,43 +35,21 @@ class RedisMutex
           raise ArgumentError, "You are trying to lock on unknown arguments: #{unknown_arguments.join(', ')}"
         end
 
-        if RUBY_VERSION.to_f > 2.3
-          define_method(with_method) do |*args, **kwargs|
-            named_arguments =  kwargs.merge(
-              Hash[target_argument_names.zip(args)].reject { |_, value| value.nil? }
-            )
-            arguments  = mutex_arguments.map { |name| named_arguments.fetch(name) }
-            key = format(
-              "%<class>s#%<target>s:%<arguments>s",
-              class: self.class.name,
-              target: target,
-              arguments: arguments.join(":")
-            )
-            begin
-              RedisMutex.with_lock(key, options) do
-                send(without_method, *args, **kwargs)
-              end
-            rescue RedisMutex::LockError
-              send(after_method, *args, **kwargs) if respond_to?(after_method)
+        define_method(with_method) do |*args, **kwargs|
+          named_arguments =  Hash[target_argument_names.zip(args)]
+          arguments  = mutex_arguments.map { |name| named_arguments.fetch(name) } + kwargs.values
+          key = format(
+            "%<class>s#%<target>s:%<arguments>s",
+            class: self.class.name,
+            target: target,
+            arguments: arguments.join(":")
+          )
+          begin
+            RedisMutex.with_lock(key, options) do
+              send(without_method, *args, **kwargs)
             end
-          end
-        else
-          define_method(with_method) do |*args|
-            named_arguments =  Hash[target_argument_names.zip(args)]
-            arguments  = mutex_arguments.map { |name| named_arguments.fetch(name) }
-            key = format(
-              "%<class>s#%<target>s:%<arguments>s",
-              class: self.class.name,
-              target: target,
-              arguments: arguments.join(":")
-            )
-            begin
-              RedisMutex.with_lock(key, options) do
-                send(without_method, *args)
-              end
-            rescue RedisMutex::LockError
-              send(after_method, *args) if respond_to?(after_method)
-            end
+          rescue RedisMutex::LockError
+            send(after_method, *args, **kwargs) if respond_to?(after_method)
           end
         end
 

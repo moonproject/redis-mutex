@@ -1,7 +1,7 @@
+[![CI](https://github.com/kenn/redis-mutex/actions/workflows/ci.yml/badge.svg)](https://github.com/kenn/redis-mutex/actions/workflows/ci.yml)
+
 Redis Mutex
 ===========
-
-[![Build Status](https://travis-ci.com/kenn/redis-mutex.svg?branch=master)](https://travis-ci.com/kenn/redis-mutex)
 
 Distributed mutex in Ruby using Redis. Supports both **blocking** and **non-blocking** semantics.
 
