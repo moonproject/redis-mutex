@@ -1,0 +1,45 @@
+name: RSpec
+
+on:
+  pull_request:
+
+env:
+  CI: true
+  REDIS_URL: redis://localhost:6379/1
+
+concurrency:
+  group: ${{ github.event.repository.name }}-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  rspec:
+    name: RSpec
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        ruby-version: [2.1, 2.2, 2.3.0, 2.7.0, 3.0, 3.1, 3.2, 3.3, 3.4]
+
+    services:
+      redis:
+        image: public.ecr.aws/docker/library/redis:7-alpine
+        ports:
+          - "6379:6379"
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby ${{ matrix.ruby-version }}
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby-version }}
+          bundler-cache: true
+
+      - name: Run rspec
+        run: bundle exec rspec
